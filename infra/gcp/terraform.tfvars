@@ -12,7 +12,7 @@ image_project = "ubuntu-os-accelerator-images"
 image_family  = "ubuntu-accelerator-2204-amd64-with-nvidia-580"
 
 # todo: set this to your public git repo url
-repo_url = "REPLACE_ME"
+repo_url = "https://github.com/dannyadkins/cs244c-zero.git"
 repo_ref = "main"
 
 use_spot = false
