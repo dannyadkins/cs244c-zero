@@ -126,7 +126,3 @@ the vm auto-shuts down after `auto_shutdown_minutes`, but you should still `terr
 - peak memory vs throughput for each stage
 - throughput vs bandwidth for each stage
 - comm volume per step for each stage
-
-## paper + demo notes
-
-this repo is meant to be small and readable. the experiments are the star.
