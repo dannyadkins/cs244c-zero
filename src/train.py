@@ -6,7 +6,7 @@ import torch
 import torch.distributed as dist
 import torch.nn.functional as F
 
-from data import make_batch
+from data import TextBatcher, make_random_batch
 from model import TransformerModel
 from zero.comm import CommLogger
 from zero.init import init_sharded_linear_params
@@ -64,6 +64,9 @@ def main():
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--weight-decay", type=float, default=0.01)
     parser.add_argument("--bandwidth-gbps", type=float, default=None)
+    parser.add_argument("--data", type=str, choices=["random", "text"], default="random")
+    parser.add_argument("--data-path", type=str, default="")
+    parser.add_argument("--data-chars", action="store_true")
     parser.add_argument("--log-every", type=int, default=1)
     parser.add_argument("--seed", type=int, default=1337)
     parser.add_argument("--backend", type=str, default=None)
@@ -96,10 +99,25 @@ def main():
     comm = CommLogger(args.bandwidth_gbps)
     group = dist.group.WORLD
 
+    # pick data source
+    if args.data == "text":
+        if not args.data_path:
+            raise ValueError("--data text requires --data-path")
+        batcher = TextBatcher(
+            args.data_path,
+            args.seq_len,
+            device,
+            use_bytes=not args.data_chars,
+        )
+        vocab_size = batcher.vocab_size
+    else:
+        batcher = None
+        vocab_size = args.vocab
+
     # build the model, swapping in sharded linears if needed
     linear_factory = build_linear_factory(args.stage, comm, group)
     model = TransformerModel(
-        vocab_size=args.vocab,
+        vocab_size=vocab_size,
         d_model=args.d_model,
         n_layers=args.n_layers,
         n_heads=args.n_heads,
@@ -148,11 +166,16 @@ def main():
         # reset comm counters each step so logs are easy to read
         comm.reset()
 
-        x, y = make_batch(args.batch_size, args.seq_len, args.vocab, device, generator)
+        if batcher is None:
+            x, y = make_random_batch(
+                args.batch_size, args.seq_len, vocab_size, device, generator
+            )
+        else:
+            x, y = batcher.get_batch(args.batch_size, generator)
 
         start = time.perf_counter()
         logits = model(x)
-        loss = F.cross_entropy(logits.reshape(-1, args.vocab), y.reshape(-1))
+        loss = F.cross_entropy(logits.reshape(-1, vocab_size), y.reshape(-1))
         loss.backward()
 
         # pick the right collective pattern for each stage

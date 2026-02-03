@@ -1,0 +1,39 @@
+# python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+
+# virtual envs
+.venv/
+.lambda-venv/
+venv/
+ENV/
+
+# notebooks
+.ipynb_checkpoints/
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# logs / outputs
+*.log
+logs/
+runs/
+outputs/
+
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# misc
+*.tmp
+*.bak

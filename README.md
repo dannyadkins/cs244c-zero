@@ -19,7 +19,9 @@ we’re reimplementing ZeRO stages 1–3 in pytorch and measuring the memory x c
 - `src/model.py`: tiny transformer
 - `src/zero/`: sharding + comm helpers
 - `infra/gcp/`: one-shot gpu vm runner (terraform)
+- `infra/lambda/`: one-shot gpu vm runner (terraform + lambda cli)
 - `scripts/gcp_setup.sh`: installs gcloud and sets your project
+- `scripts/lambda_run.sh`: runs a one-shot lambda job
 
 ## quick start (local)
 
@@ -65,6 +67,8 @@ torchrun --nproc_per_node=2 src/train.py --stage 3
 - `--steps 100` to shorten runs
 - `--d-model`, `--n-layers`, `--n-heads`, `--dim-ff` to scale the model
 - `--batch-size`, `--seq-len` to change workload
+- `--data text --data-path path/to/file.txt` to train on real text
+- `--data-chars` to use character vocab instead of raw bytes
 
 ## how the stages map to code
 
@@ -93,6 +97,21 @@ comm volume is an estimate based on tensor sizes, which is good enough for compa
 - that means params with dim0 not divisible by world size stay replicated
 - defaults are chosen to divide cleanly for 2/4/8 gpus
 
+## real dataset mode
+
+by default we train on random tokens, so the loss stays flat (around log(vocab)).
+if you want to see real learning, pass a text file:
+
+```bash
+python3 src/train.py --stage 0 --data text --data-path data/my_corpus.txt --seq-len 128 --batch-size 8
+```
+
+this uses a simple next-token task over bytes by default (vocab size 256). if you want a char-level vocab instead:
+
+```bash
+python3 src/train.py --stage 0 --data text --data-path data/my_corpus.txt --data-chars
+```
+
 ## running in the cloud (gcp)
 
 we use a one-shot gpu vm that runs a command and shuts down.
@@ -120,6 +139,45 @@ terraform destroy
 ```
 
 the vm auto-shuts down after `auto_shutdown_minutes`, but you should still `terraform destroy` to clean up disks.
+
+## running in the cloud (lambda + terraform)
+
+this uses terraform as a wrapper around the lambda cloud cli, so we can keep a one-command workflow without gcp quotas.
+
+fresh user checklist:
+
+1) make a lambda cloud account and add an ssh key in the console.
+2) grab your api token from the console.
+3) install terraform (one time).
+
+then from this repo:
+
+```bash
+export LAMBDA_CLOUD_API_TOKEN="your_token_here"
+cd infra/lambda
+terraform init
+terraform apply -var "ssh_key_name=YOUR_KEY_NAME"
+```
+
+notes:
+
+- `ssh_key_name` is the key label from the lambda console (not a filepath).
+- by default it picks the cheapest available 1-gpu instance.
+- you can override the command like this:
+
+```bash
+terraform apply \
+  -var "ssh_key_name=YOUR_KEY_NAME" \
+  -var "run_cmd=torchrun --nproc_per_node=1 src/train.py --stage 3 --steps 200"
+```
+
+- you can request more gpus like this:
+
+```bash
+terraform apply \
+  -var "ssh_key_name=YOUR_KEY_NAME" \
+  -var "min_gpus=2"
+```
 
 ## what we’ll plot for the paper
 

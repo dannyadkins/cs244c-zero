@@ -2,10 +2,10 @@ project_id = "arboreal-inn-486300-j0"
 region     = "us-central1"
 zone       = "us-central1-a"
 
-# l4 gpu setup (2x) — good price/perf for experiments
-machine_type = "g2-standard-24"
+# l4 gpu setup (1x) — fits the current quota
+machine_type = "g2-standard-12"
 gpu_type     = "nvidia-l4"
-gpu_count    = 2
+gpu_count    = 1
 
 # gpu-ready ubuntu image (nvidia drivers preinstalled)
 image_project = "ubuntu-os-accelerator-images"
@@ -19,4 +19,4 @@ use_spot = false
 
 auto_shutdown_minutes = 240
 
-run_cmd = "torchrun --nproc_per_node=2 src/train.py --stage 3"
+run_cmd = "torchrun --nproc_per_node=1 src/train.py --stage 3"
