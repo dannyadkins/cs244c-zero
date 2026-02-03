@@ -1,6 +1,6 @@
 # cs244c-zero
 
-we’re reimplementing ZeRO stages 1–3 in pytorch and measuring the memory ↔ communication ↔ throughput tradeoff. the goal isn’t to clone deepspeed, it’s to get the core collectives right (all-reduce, reduce-scatter, all-gather) and run clean experiments.
+we’re reimplementing ZeRO stages 1–3 in pytorch and measuring the memory x communication x throughput tradeoff. the goal isn’t to clone deepspeed
 
 ## what we’re doing
 
