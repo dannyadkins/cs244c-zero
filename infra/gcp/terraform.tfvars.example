@@ -1,0 +1,20 @@
+project_id = "REPLACE_ME"
+region     = "us-central1"
+zone       = "us-central1-a"
+
+machine_type = "REPLACE_ME"
+gpu_type     = "REPLACE_ME"
+gpu_count    = 2
+
+image_project = "REPLACE_ME"
+image_family  = "REPLACE_ME"
+
+repo_url = "REPLACE_ME"
+repo_ref = "main"
+
+# spot capacity if you want it
+use_spot = false
+
+auto_shutdown_minutes = 240
+
+run_cmd = "torchrun --nproc_per_node=2 src/train.py --stage 3"
